@@ -10,12 +10,17 @@
 """
 
 
-def ask_user():
-    """
-    Замените pass на ваш код
-    """
-    pass
+def ask_user(*, ok_status='Хорошо', prompt='Как дела?', max_tries=-1) -> int:
+    """Infitely prompt user mood until its ok."""
+    retries = 0
+    while mood := input(f'{prompt}\n>>>') != ok_status:
+        retries += 1
+        if retries == max_tries:
+            break
+
+    return retries
 
     
 if __name__ == "__main__":
-    ask_user()
+    retries = ask_user()
+    print(f'{retries=}')
