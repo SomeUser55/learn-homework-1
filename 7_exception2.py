@@ -13,11 +13,16 @@
 """
 
 def get_summ(num_one, num_two):
-    """
-    Замените pass на ваш код
-    """
-    pass
-    
+    nums = [num_one, num_two]
+    for index, num in enumerate(nums):
+        try:
+            nums[index] = int(num)
+        except ValueError:
+            return None
+
+    return sum(nums)
+
+
 if __name__ == "__main__":
     print(get_summ(2, 2))
     print(get_summ(3, "3"))
