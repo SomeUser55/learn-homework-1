@@ -25,7 +25,6 @@ import ephem
 from expression_solver import solve_expression
 
 
-INPUT_PROMPT = 'Введите выражение:'
 
 PARENT_DIR = Path(__file__).parent
 CORPUS_PATH = os.path.join(PARENT_DIR, 'corpus_world_city.txt')
@@ -40,7 +39,7 @@ for city in cities:
 
     CITY_CATALOG[first_letter].append(city)
 
-SEEN_CITY = {}
+USERS_IN_GAME = {}
 
 TOKEN = os.environ['TOKEN']
 
@@ -72,8 +71,29 @@ def greet_user(bot, update):
 
 def talk_to_me(bot, update):
     user_text = update.message.text 
-    print(user_text)
-    update.message.reply_text(user_text)
+    user_id = update['message']['from_user']['id']
+    global USERS_IN_GAME
+    if user_id not in USERS_IN_GAME:
+        update.message.reply_text(user_text)
+        return
+
+    user_city = user_text.lower()
+    first_letter = user_city[0]
+    if user_city not in CITY_CATALOG[first_letter]:
+        USERS_IN_GAME.pop(user_id)
+        update.message.reply_text('Нет такого города. Вы проиграли.')
+        return
+
+    if user_city in USERS_IN_GAME[user_id]:
+        USERS_IN_GAME.pop(user_id)
+        update.message.reply_text('Этот город уже был. Вы проиграли.')
+        return
+
+    USERS_IN_GAME[user_id].add(user_city)
+    last_letter = user_city[-1]
+    my_city = choice(CITY_CATALOG[last_letter])
+    USERS_IN_GAME[user_id].add(my_city)
+    update.message.reply_text(my_city.capitalize())
 
 
 def handle_planet_command(bot, update):
@@ -106,26 +126,17 @@ def handle_next_full_moon(bot, update):
 def handle_cities(bot, update):
     # TODO make it work
     print('handle cities')
-    global SEEN_CITY, CITY_CATALOG
+    global USERS_IN_GAME
     user_id = update['message']['from_user']['id']
-    if user_id not in SEEN_CITY:
-        update.message.reply_text('Начинаем игру в города')
-        SEEN_CITY[user_id] = set()
-
-    from_user = update.message.text.lower()
-    user_city = from_user.split()[1]
-    first_letter = user_city[0]
-    if user_city not in CITY_CATALOG[first_letter]:
-        SEEN_CITY.pop(user_id)
-        update.message.reply_text('Нет такого города. Вы проиграли.')
-        return
-
-    SEEN_CITY[user_id].add(user_city)
-    last_letter = user_city[-1]
-    my_city = choice(CITY_CATALOG[last_letter]).capitalize()
-    update.message.reply_text(my_city)
+    if user_id not in USERS_IN_GAME:
+        USERS_IN_GAME[user_id] = set()
+        update.message.reply_text('Начинаем игру в города. Ваш ход.')
+    else:
+        update.message.reply_text('Закончили игру в города')
+        USERS_IN_GAME.pop(user_id)
 
 
+   
 def handle_calc(bot, update):
     from_user = update.message.text
     expression = from_user.split('/calc')[1].replace(' ', '')
