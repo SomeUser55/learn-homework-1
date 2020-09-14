@@ -15,10 +15,32 @@
 import logging
 import os
 from datetime import datetime
+from pathlib import Path
+from pprint import pprint
+from random import choice
 
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import ephem
 
+from expression_solver import solve_expression
+
+
+INPUT_PROMPT = 'Введите выражение:'
+
+PARENT_DIR = Path(__file__).parent
+CORPUS_PATH = os.path.join(PARENT_DIR, 'corpus_world_city.txt')
+with open(CORPUS_PATH) as f:
+    cities = f.read().lower().split()
+
+CITY_CATALOG = {}
+for city in cities:
+    first_letter = city[0]
+    if first_letter not in CITY_CATALOG:
+        CITY_CATALOG[first_letter] = [] 
+
+    CITY_CATALOG[first_letter].append(city)
+
+SEEN_CITY = {}
 
 TOKEN = os.environ['TOKEN']
 
@@ -66,12 +88,68 @@ def handle_planet_command(bot, update):
     update.message.reply_text(text)
 
 
+def handle_wordcount(bot, update):
+    from_user = update.message.text
+    words = from_user.split()
+    words_cnt = len(words) - 1
+    to_user = 'Количество слов: {}'.format(words_cnt)
+    update.message.reply_text(to_user)
+
+
+def handle_next_full_moon(bot, update):
+    now = datetime.today().strftime('%Y/%m/%d')
+    next_moon_date = ephem.next_full_moon(now).datetime().strftime('%Y-%m-%d')
+    to_user = 'Следующее полнолуние состоится: {}'.format(next_moon_date)
+    update.message.reply_text(to_user)
+
+
+def handle_cities(bot, update):
+    # TODO make it work
+    print('handle cities')
+    global SEEN_CITY, CITY_CATALOG
+    user_id = update['message']['from_user']['id']
+    if user_id not in SEEN_CITY:
+        update.message.reply_text('Начинаем игру в города')
+        SEEN_CITY[user_id] = set()
+
+    from_user = update.message.text.lower()
+    user_city = from_user.split()[1]
+    first_letter = user_city[0]
+    if user_city not in CITY_CATALOG[first_letter]:
+        SEEN_CITY.pop(user_id)
+        update.message.reply_text('Нет такого города. Вы проиграли.')
+        return
+
+    SEEN_CITY[user_id].add(user_city)
+    last_letter = user_city[-1]
+    my_city = choice(CITY_CATALOG[last_letter]).capitalize()
+    update.message.reply_text(my_city)
+
+
+def handle_calc(bot, update):
+    from_user = update.message.text
+    expression = from_user.split('/calc')[1].replace(' ', '')
+    print(expression)
+    try:
+        result = str(solve_expression(expression))
+    except ZeroDivisionError:
+        result = 'Деление на ноль!'
+    except ValueError:
+        result = 'Ошибка!'
+
+    update.message.reply_text(result)
+
+
 def main():
     mybot = Updater(TOKEN, request_kwargs=PROXY)
     
     dp = mybot.dispatcher
     dp.add_handler(CommandHandler("start", greet_user))
     dp.add_handler(CommandHandler("planet", handle_planet_command))
+    dp.add_handler(CommandHandler("wordcount", handle_wordcount))
+    dp.add_handler(CommandHandler("next_full_moon", handle_next_full_moon))
+    dp.add_handler(CommandHandler("cities", handle_cities))
+    dp.add_handler(CommandHandler("calc", handle_calc))
     dp.add_handler(MessageHandler(Filters.text, talk_to_me))
     
     mybot.start_polling()
