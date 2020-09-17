@@ -5,12 +5,12 @@
 Условный оператор: Сравнение строк
 
 * Написать функцию, которая принимает на вход две строки
-* Проверить, является ли то, что передано функции, строками. 
+* Проверить, является ли то, что передано функции, строками.
   Если нет - вернуть 0
 * Если строки одинаковые, вернуть 1
 * Если строки разные и первая длиннее, вернуть 2
 * Если строки разные и вторая строка 'learn', возвращает 3
-* Вызвать функцию несколько раз, передавая ей разные праметры 
+* Вызвать функцию несколько раз, передавая ей разные праметры
   и выводя на экран результаты
 
 """
@@ -21,7 +21,7 @@ from functools import wraps
 
 def show_func_call(func: Callable) -> Callable:
     """Print function input/output."""
-    # TODO func kwargs 
+    # TODO func kwargs
     @wraps(func)
     def wrapper(*args):
         res = func(*args)
@@ -48,7 +48,7 @@ def check_strings(str1: str, str2: str) -> Optional[int]:
         res = 2
     elif str2 == 'learn':
         res = 3
-    
+
     return res
 
 
@@ -64,7 +64,7 @@ def main():
         (' ', 'learn'),
     ]
     for arg1, arg2 in args_to_check:
-        check_result: Optional[int] = check_strings(arg1, arg2)
+        check_strings(arg1, arg2)
 
 
 if __name__ == "__main__":
